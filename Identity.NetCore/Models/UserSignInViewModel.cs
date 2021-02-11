@@ -13,5 +13,7 @@ namespace Identity.NetCore.Models
         [Display(Name = "Şifre:")]
         [Required(ErrorMessage = "Şifre Boş Geçilemez.")]
         public string Password { get; set; }
+
+        public bool RememberMe { get; set; }
     }
 }

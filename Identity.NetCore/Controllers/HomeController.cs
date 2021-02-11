@@ -28,14 +28,25 @@ namespace Identity.NetCore.Controllers
         {
             if (ModelState.IsValid)
             {
-                var identityResult = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, false, false);
+                var identityResult = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, model.RememberMe, true);
+
+                if (identityResult.IsLockedOut)
+                {
+                    var gelen = await _userManager.GetLockoutEndDateAsync(await _userManager.FindByNameAsync(model.UserName));
+                    var kisitlananSure = gelen.Value;
+                    var kalanDakika = kisitlananSure.Minute - DateTime.Now.Minute;
+                    ModelState.AddModelError("", $"3 Kere hatalı giriş yaptığınız için hesabınız kitlenmiştir. {kalanDakika} dk kilitlenmiştir.");
+                    return View("Index", model);
+                }
+
                 if (identityResult.Succeeded)
                 {
                     return RedirectToAction("Index", "Panel");
                 }
-                ModelState.AddModelError("", "Kullanıcı Adı veya Şifre Hatalı.");
+                var yanlisGirilmeSayisi = await _userManager.GetAccessFailedCountAsync(await _userManager.FindByNameAsync(model.UserName));
+                ModelState.AddModelError("", $"Kullanıcı Adı veya Şifre Hatalı. {5 - yanlisGirilmeSayisi} kere yanlış girerseniz hesabınız bloklanacaktır");
             }
-            
+
             return View("Index", model);
         }
         public IActionResult SignUp()

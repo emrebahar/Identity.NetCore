@@ -1,4 +1,5 @@
 using Identity.NetCore.Context;
+using Identity.NetCore.CustomValidator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -18,13 +19,30 @@ namespace Identity.NetCore
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<IdentityContext>();
-            services.AddIdentity<AppUser,AppRole>(opt=> {
+            services.AddIdentity<AppUser, AppRole>(opt =>
+            {
                 opt.Password.RequireDigit = false;
                 opt.Password.RequireLowercase = false;
                 opt.Password.RequiredLength = 1;
                 opt.Password.RequireNonAlphanumeric = false;
                 opt.Password.RequireUppercase = false;
-            }).AddEntityFrameworkStores<IdentityContext>();
+                opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+                opt.Lockout.MaxFailedAccessAttempts = 3;
+
+            }).AddErrorDescriber<CustomIdentityValidator>()
+              .AddPasswordValidator<CustomPasswordValidator>()
+              .AddEntityFrameworkStores<IdentityContext>();
+
+            services.ConfigureApplicationCookie(opt =>
+            {
+                opt.LoginPath = new PathString("/Home/Index");
+                opt.Cookie.HttpOnly = true;
+                opt.Cookie.Name = "IdentityCookie";
+                opt.Cookie.SameSite = SameSiteMode.Strict;
+                opt.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                opt.ExpireTimeSpan = TimeSpan.FromDays(20);
+
+            });
             services.AddControllersWithViews();
         }
 
@@ -39,6 +57,10 @@ namespace Identity.NetCore
             app.UseRouting();
 
             app.UseStaticFiles();
+
+            app.UseAuthentication();
+
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
