@@ -24,6 +24,7 @@ namespace Identity.NetCore.Controllers
             return View(new UserSignInViewModel());
         }
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(UserSignInViewModel model)
         {
             if (ModelState.IsValid)
@@ -76,6 +77,10 @@ namespace Identity.NetCore.Controllers
                 }
             }
             return View(model);
+        }
+        public IActionResult AccessDenied()
+        {
+            return View();
         }
     }
 }
